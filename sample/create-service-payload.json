@@ -1,0 +1,47 @@
+{
+    "Name": "dd5d46f0f18cc5507255bb19f00d353f",
+    "TaskTemplate": {
+        "ContainerSpec": {
+            "Image": "ghcr.io/servicenow/atf-headless-runner:lin-1.0.0",
+            "Env": [
+                "AGENT_ID=555d46f01b8cc5504aa7524b92f4933f",
+                "BROWSER=headlesschrome",
+                "INSTANCE_URL=https://dev102702.service-now.com",
+                "SN_USERNAME=ATF-HEADLESS-BROWSER-TEST",
+                "TIMEOUT_MINS=1440",
+                "LOGIN_PAGE=login.do",
+                "RUNNER_URL=atf_test_runner.do?sysparm_nostack=true&sysparm_scheduled_tests_only=true&sysparm_headless=true",
+                "LOGIN_BUTTON_ID=sysverb_login",
+                "USER_FIELD_ID=user_name",
+                "PASSWORD_FIELD_ID=user_password",
+                "HEADLESS_VALIDATION_PAGE=atf_headless_validation_page",
+                "VP_VALIDATION_ID=headless_vp_validation",
+                "VP_HAS_ROLE_ID=headless_vp_has_role",
+                "VP_SUCCESS_ID=headless_vp_success",
+                "TEST_RUNNER_BANNER_ID=test_runner_banner",
+                "HEARTBEAT_ENABLED=true",
+                "HEARTBEAT_URI=/api/now/atf_agent/online",
+                "BROWSER_OPTIONS=add_argument('--no-sandbox');add_argument('--disable-gpu');add_argument('--ignore-certificate-errors')",
+                "SECRET_PATH=/run/secrets/sn_password"
+            ],
+            "Secrets": [
+                {
+                    "SecretName": "sn_password",
+                    "SecretID": "u19fa97lheuy0jg7xmy7nwtzh",
+                    "File": {
+                        "GID": "1000",
+                        "Mode": 256,
+                        "Name": "sn_password",
+                        "UID": "1000"
+                    }
+                }
+            ]
+        },
+        "RestartPolicy": {
+            "Condition": "any",
+            "Delay": 0,
+            "MaxAttempts": 1,
+            "Window": 60000000000
+        }
+    }
+}
