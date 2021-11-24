@@ -1,5 +1,6 @@
 *
 
+!Dockerfile
 !app.js
 !mw
-!package*
+!package*.json
