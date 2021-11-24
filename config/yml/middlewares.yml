@@ -1,0 +1,6 @@
+http:
+  middlewares:
+    basic-auth:
+      basicAuth:
+        removeHeader: true
+        usersFile: "/config/auth/users"

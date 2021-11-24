@@ -1,9 +1,0 @@
-[[tls.certificates]]
-   certFile = "/cert/cert.pem"
-   keyFile = "/cert/key.key"
-
-[tls.stores]
-  [tls.stores.default]
-   [tls.stores.default.defaultCertificate]
-    certFile = "/cert/cert.pem"
-    keyFile = "/cert/key.key"

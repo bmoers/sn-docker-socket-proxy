@@ -1,23 +1,5 @@
-from node:16 AS base
+FROM node:16
 
-# Setup SR networking
-ENV HTTP_PROXY="http://gate-zrh.swissre.com:8080"
-ENV http_proxy="http://gate-zrh.swissre.com:8080"
-ENV HTTPS_PROXY="http://gate-zrh.swissre.com:8080"
-ENV https_proxy="http://gate-zrh.swissre.com:8080"
-ENV no_proxy=localhost,.swissre.com,.sccloud.swissre.com,.gwpnet.com
-ENV NO_PROXY=localhost,.swissre.com,.sccloud.swissre.com,.gwpnet.com
-
-ADD http://pki.swissre.com/aia/SwissReRootCA2.crt /usr/local/share/ca-certificates/
-ADD http://pki.swissre.com/aia/SwissReSystemCA21.crt /usr/local/share/ca-certificates/
-ADD http://pki.swissre.com/aia/SwissReSystemCA22.crt /usr/local/share/ca-certificates/
-ADD http://pki.swissre.com/aia/SwissReSystemCA24.crt /usr/local/share/ca-certificates/
-ADD http://pki.swissre.com/aia/SwissReSystemCA25.crt /usr/local/share/ca-certificates/
-
-ADD http://pki.swissre.com/aia/SwissReRootCA1.crt /usr/local/share/ca-certificates/
-ADD http://pki.swissre.com/aia/SwissReRootCA2.crt /usr/local/share/ca-certificates/
-ADD http://pki.swissre.com/aia/SwissReSystemCA12.crt /usr/local/share/ca-certificates/
-ADD http://pki.swissre.com/aia/SwissReSystemCA22.crt /usr/local/share/ca-certificates/
 
 ENV NODE_ENV production
 ENV NODE_EXTRA_CA_CERTS /etc/ssl/certs/ca-certificates.crt

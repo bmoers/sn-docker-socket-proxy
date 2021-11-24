@@ -7,23 +7,15 @@ services:
     restart: unless-stopped
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
-    #  - "./cert/:/cert/"
+      - "./config/:/config/"
     command:
       #- --log.level=DEBUG
       - --api.insecure=false
       - --providers.docker=true
-      - --providers.docker.network=web_web
       - --providers.docker.exposedbydefault=false
-
-      - --entrypoints.web.address=:8080
       - --entrypoints.web-secure.address=:8443
-     # - --providers.file.directory=/cert/
-     # - --providers.file.watch=true
+      - --providers.file.directory=/config/yml/
     ports:
-      # Port 8080 is used for HTTP traffic to traefik (requires --api.insecure=true)
-      # - 10.92.48.199:8080:8080
-      # Port 443 is used for HTTPS traffic
-      #- 10.92.48.199:443:443
       - 8080:8080
       - 8443:8443
     networks:
@@ -31,28 +23,19 @@ services:
 
   socket-proxy:
     container_name: socket-proxy
-    #image: sr-dif-web:latest
     build: 
       context: ./
-#      dockerfile: Dockerfile
-      
     restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
     env_file: .env
     networks:
       - web
-
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
     labels:
       traefik.enable: true
-
-      traefik.http.routers.http-catchall.rule: hostregexp(`{host:.+}`)
-      traefik.http.routers.http-catchall.entrypoints: web
-      traefik.http.routers.http-catchall.middlewares: redirect-to-https@docker
-      traefik.http.middlewares.redirect-to-https.redirectscheme.scheme: https
-
-      traefik.http.routers.socket-proxy.rule: "Host(`app.10.92.43.96.nip.io`)"
+      traefik.http.routers.socket-proxy.rule: "Host(`app.127.0.0.1.nip.io`)"
       traefik.http.routers.socket-proxy.tls: true
+      traefik.http.routers.socket-proxy.middlewares: basic-auth@file
       traefik.http.routers.socket-proxy.entrypoints: web-secure
 
 networks:
