@@ -16,7 +16,7 @@ const {
     createService,
     getLogs,
     deleteService
-} = require('./docker-socket-mw');
+} = require('./mw/dockerd');
 
 
 app.route('/:version?/images/json').get(async (req, res) => {
@@ -59,4 +59,6 @@ app.use((err, req, res, next) => {
     console.error(err);
     res.status(500).send(err.message);
 });
-app.listen(8443);
+app.listen(3000, ()=>{
+    console.log('server listening on port 3000');
+});

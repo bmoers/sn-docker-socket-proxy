@@ -1,4 +1,4 @@
-const proxyMiddleware = require('./proxy-middleware');
+const proxyMiddleware = require('./mw/proxy');
 const express = require('express');
 const bodyParser = require('body-parser');
 

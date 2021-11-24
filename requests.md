@@ -1,4 +1,4 @@
-# Request 
+# Request
 
 1. GET /images/json
 

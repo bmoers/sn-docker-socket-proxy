@@ -1,33 +1,27 @@
-# Azure Web API
+# Docker Socket Proxy (DSP) for ServiceNow ATF Headless Browser Integration
 
-Trigger a pipeline from remote: 
-https://github.com/marketplace/actions/azure-pipelines-action
+By design, ServiceNow [ATF Headless Browser integration](https://docs.servicenow.com/bundle/rome-application-development/page/administer/auto-test-framework/concept/atf-headless-browser.html) requires:
 
-Node API
-https://www.npmjs.com/package/azure-devops-node-api
+- a VM with Dockerd, swarm enabled
+- the docker host to be public available
+- the dockerd unix socket to be shared to the public (via Mutual Auth)
 
+Unfortunately the OOB solution does not:
 
+- integrate with cloud container service providers (Azure, AWS, etc)
+- work with on-prem VM (Mutual Auth is not available via MID server)
 
+This socket proxy exposes a REST API with the endpoints called by ServiceNow to create, monitor and delete the headless browser container and forwards these requests to services like:
 
-pipeline examples:
-https://docs.microsoft.com/en-us/azure/devops/pipelines/apps/cd/deploy-docker-webapp?view=azure-devops&tabs=javascript
+- dockerd on a local VM (swarm enabled to lb over multiple VM)
+- Azure to start the containers in the cloud (in progress)
+- AWS (tbd)
 
-K8s
-https://docs.microsoft.com/en-us/azure/devops/pipelines/apps/cd/deploy-aks?view=azure-devops&tabs=javascript
+The integration process is:
 
+1. ATF scheduler run in ServiceNow
+2. Headless Docker request via MID server to this DSP REST API
+3. DSP forward request to container service like
+   - dockerd (wia unix socket)
+   - Azure (via [REST Api](https://docs.microsoft.com/en-us/rest/api/container-instances/))
 
-Azure Deployment Manager REST API Reference
-https://docs.microsoft.com/en-us/rest/api/deploymentmanager/
-
-
---> Quickstart: Deploy a container instance in Azure using an ARM template
-https://docs.microsoft.com/en-us/azure/container-instances/container-instances-quickstart-template?toc=/azure/azure-resource-manager/templates/toc.json
-
---> --> Deploy resources with ARM templates and Azure Resource Manager REST API
-https://docs.microsoft.com/en-us/azure/azure-resource-manager/templates/deploy-rest
-
---> --> --> Creates a Container App within a Container App Environment.
-https://azure.microsoft.com/de-de/resources/templates/container-app-create/
-
-What are ARM templates?
-https://docs.microsoft.com/en-us/azure/azure-resource-manager/templates/overview 
