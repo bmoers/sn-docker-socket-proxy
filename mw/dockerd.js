@@ -8,9 +8,9 @@ const axios = require('axios');
 const instance = axios.create({
     baseURL: 'http://localhost',
     httpAgent: agent,
-    //socketPath: "/var/run/docker.sock",
 });
 
+// curl --unix-socket /var/run/docker.sock http://localhost/containers/json
 
 const getImage = async (filters = {}) => {
     const response = {
@@ -62,7 +62,6 @@ const getLogs = async (serviceId) => {
     }
     try {
         const request = await instance.get(`/services/${serviceId}/logs?stdout=true&stderr=true`);
-        console.log(request.headers)
         response.status = request.status;
         response.body = request.data;
     } catch (error) {
@@ -85,7 +84,6 @@ const deleteService = async (serviceId) => {
     }
     try {
         const request = await instance.delete(`/services/${serviceId}`);
-        console.log(request.headers)
         response.status = request.status;
         response.body = request.data;
     } catch (error) {
@@ -105,5 +103,6 @@ module.exports = {
     getImage,
     createService,
     getLogs,
-    deleteService
+    deleteService,
+    cleanUp: () => {}
 }
