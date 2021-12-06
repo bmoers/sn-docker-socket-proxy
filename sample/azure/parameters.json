@@ -1,0 +1,61 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "containerName": {
+            "value": "atf-runner-test-01"
+        },
+        "location": {
+            "value": "switzerlandnorth"
+        },
+        "imageType": {
+            "value": "Public"
+        },
+        "imageName": {
+            "value": "ghcr.io/servicenow/atf-headless-runner:lin-1.0.0"
+        },
+        "osType": {
+            "value": "Linux"
+        },
+        "numberCpuCores": {
+            "value": "1"
+        },
+        "memory": {
+            "value": "1.5"
+        },
+        "restartPolicy": {
+            "value": "OnFailure"
+        },
+        "environmentVariable0": {
+            "value": null
+        },
+        "environmentVariable1": {
+            "value": "value"
+        },
+        "ipAddressType": {
+            "value": "Private"
+        },
+        "ports": {
+            "value": [
+                {
+                    "port": "80",
+                    "protocol": "TCP"
+                }
+            ]
+        },
+        "subnetName": {
+            "value": "default"
+        },
+        "subnetAddressPrefix": {
+            "value": "10.0.0.0/24"
+        },
+        "vnetName": {
+            "value": "rg-co-cicdsnow-dev-001-vnet"
+        },
+        "addressPrefixes": {
+            "value": [
+                "10.0.0.0/24"
+            ]
+        }
+    }
+}
