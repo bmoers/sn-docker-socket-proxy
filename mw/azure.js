@@ -29,9 +29,9 @@ if (missing.length) {
 const deleteTimeout = {};
 const options = {}
 
-if(process.env.HTTP_PROXY){
+if(process.env.HTTP_PROXY_HOST){
     const proxyOptions = {
-        host: process.env.HTTP_PROXY
+        host: process.env.HTTP_PROXY_HOST
     }
     if(process.env.HTTP_PROXY_PORT){
         proxyOptions.port = parseInt(process.env.HTTP_PROXY_PORT, 10);
