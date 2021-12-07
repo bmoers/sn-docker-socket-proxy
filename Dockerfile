@@ -23,6 +23,6 @@ RUN npm ci --only=production --no-optional --no-audit --no-fund
 ADD ./mw ./mw
 ADD ./app.js ./
 
-EXPOSE 3000
+EXPOSE 8080
 
 CMD node app.js
