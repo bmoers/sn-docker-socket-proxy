@@ -6,25 +6,18 @@ const {
 } = require("@azure/arm-containerinstance");
 
 
+const mandatoryVars = ['CREG_AZURE_TENANT_ID', 'CREG_AZURE_CLIENT_ID', 'CREG_AZURE_CLIENT_SECRET', 'CREG_AZURE_RESOURCE_GROUP_NAME', 'CREG_AZURE_SUBSCRIPTION_ID', 'CREG_AZURE_RESOURCE_LOCATION', 'ATF_SN_PASSWORD']
+require('../lib/mandatory.js')(mandatoryVars);
+
+
 const containerGroupPrefix = 'atf-grp-';
 
-const resourceGroupName = process.env.AZURE_RESOURCE_GROUP_NAME;
-const subscriptionId = process.env.AZURE_SUBSCRIPTION_ID;
-const containerGroupLocation = process.env.AZURE_RESOURCE_LOCATION;
-const userPasswordBase64 = Buffer.from(process.env.SN_PASSWORD).toString('base64');
+const resourceGroupName = process.env.CREG_AZURE_RESOURCE_GROUP_NAME;
+const subscriptionId = process.env.CREG_AZURE_SUBSCRIPTION_ID;
+const containerGroupLocation = process.env.CREG_AZURE_RESOURCE_LOCATION;
+const userPasswordBase64 = Buffer.from(process.env.ATF_SN_PASSWORD).toString('base64');
 
 
-const mandatoryVars = ['AZURE_TENANT_ID', 'AZURE_CLIENT_ID', 'AZURE_CLIENT_SECRET', 'AZURE_RESOURCE_GROUP_NAME', 'AZURE_SUBSCRIPTION_ID', 'AZURE_RESOURCE_LOCATION', 'SN_PASSWORD']
-
-const missing = mandatoryVars.reduce((out, varName) => {
-
-    if (!process.env[varName])
-        out.push(`${varName} variable is mandatory`);
-    return out;
-}, [])
-if (missing.length) {
-    throw new Error(missing.join('\n'));
-}
 
 const deleteTimeout = {};
 const options = {}
@@ -39,7 +32,7 @@ if(process.env.HTTP_PROXY_HOST){
     options.proxyOptions = proxyOptions;
 }
 
-const credential = new ClientSecretCredential(process.env.AZURE_TENANT_ID, process.env.AZURE_CLIENT_ID, process.env.AZURE_CLIENT_SECRET, options);
+const credential = new ClientSecretCredential(process.env.CREG_AZURE_TENANT_ID, process.env.CREG_AZURE_CLIENT_ID, process.env.CREG_AZURE_CLIENT_SECRET, options);
 
 /**
  * Safely delete a containerGroup

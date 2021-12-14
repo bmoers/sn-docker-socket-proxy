@@ -1,42 +1,16 @@
 version: "3.6"
 
 services:
-  traefik:
-    container_name: traefik
-    image: traefik:v2.3
-    restart: unless-stopped
-    volumes:
-      - "/var/run/docker.sock:/var/run/docker.sock:ro"
-      - "./config/:/config/"
-    command:
-      #- --log.level=DEBUG
-      - --api.insecure=false
-      - --providers.docker=true
-      - --providers.docker.exposedbydefault=false
-      - --entrypoints.web-secure.address=:8443
-      - --providers.file.directory=/config/yml/
-    ports:
-      - 8080:8080
-      - 8443:8443
-    networks:
-      - web
-
   socket-proxy:
-    container_name: socket-proxy
-    build: 
-      context: ./
+    image: ghcr.io/bmoers/sn/sn-docker-socket-proxy:latest
     restart: unless-stopped
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     env_file: .env
     networks:
       - web
-    labels:
-      traefik.enable: true
-      traefik.http.routers.socket-proxy.rule: "Host(`app.127.0.0.1.nip.io`)"
-      traefik.http.routers.socket-proxy.tls: true
-      traefik.http.routers.socket-proxy.middlewares: basic-auth@file
-      traefik.http.routers.socket-proxy.entrypoints: web-secure
+    ports:
+      - 8080:8080
 
 networks:
   web:
