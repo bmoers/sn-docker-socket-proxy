@@ -223,7 +223,7 @@ To run the proxy, copy the .env.example file to .env, update the following envir
 # ----------------------------------------------------------------
 # Select the authentication strategy for the REST API
 # can be 'basic-auth' or 'azure-ad'
-AUTH_STRATEGY=azure-ad
+AUTH_STRATEGY=basic-auth
 
 
 # ----------------------------------------------------------------

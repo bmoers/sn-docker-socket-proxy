@@ -2,6 +2,7 @@
 
 !Dockerfile
 !app.js
+!debug.js
 !mw
 !package*.json
 !strategies

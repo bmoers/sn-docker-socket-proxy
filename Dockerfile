@@ -21,7 +21,10 @@ ADD --chown=node:node ./package*.json ./
 RUN npm ci --only=production --no-optional --no-audit --no-fund 
 
 ADD ./mw ./mw
-ADD ./app.js ./
+ADD ./strategies ./strategies
+ADD ./lib ./lib
+
+ADD ./app.js ./debug.js ./
 
 EXPOSE 8080
 

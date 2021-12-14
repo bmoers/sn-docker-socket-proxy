@@ -6,6 +6,7 @@ services:
     restart: unless-stopped
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+      - ./.htpasswd:/config/.htpasswd
     env_file: .env
     networks:
       - web
