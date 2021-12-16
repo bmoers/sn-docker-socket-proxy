@@ -1,3 +1,8 @@
+const { Logger } = require("../lib/logger");
+
+const log = Logger.child({
+    namespace: 'mw/dockerd',
+});
 const http = require('http');
 
 const agent = new http.Agent({
@@ -5,6 +10,7 @@ const agent = new http.Agent({
 })
 
 const axios = require('axios');
+const { path } = require("express/lib/application");
 const instance = axios.create({
     baseURL: 'http://localhost',
     httpAgent: agent,
@@ -104,5 +110,9 @@ module.exports = {
     createService,
     getLogs,
     deleteService,
-    cleanUp: () => {}
+    cleanUp: async () => {
+        if (process.env.DEBUG) {
+            log.debug('cleanUp not supported in dockerd');
+        }
+    }
 }

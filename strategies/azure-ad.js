@@ -1,4 +1,7 @@
-
+const { Logger } = require("../lib/logger");
+const log = Logger.child({
+    namespace: 'strategies/azure-ad',
+});
 
 const BearerStrategy = require('passport-azure-ad').BearerStrategy;
 

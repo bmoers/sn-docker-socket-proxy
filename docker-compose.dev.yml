@@ -1,0 +1,18 @@
+version: "3.6"
+
+services:
+  socket-proxy:
+    build: .
+    env_file: .env
+    restart: "no"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./.htpasswd:/config/.htpasswd
+    networks:
+      - web
+    ports:
+      - 8080:8080
+
+networks:
+  web:
+    driver: bridge

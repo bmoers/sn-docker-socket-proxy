@@ -1,11 +1,25 @@
 require("dotenv").config();
 
+const { Logger } = require("./lib/logger");
+const log = Logger.child({
+    namespace: 'app',
+});
+
 const PORT = parseInt(process.env.PORT || 8080, 10);
+const IS_K8S = Boolean(process.env.KUBERNETES_SERVICE_HOST);
 
 const express = require('express');
 const bodyParser = require('body-parser');
 const passport = require("passport");
 const app = express();
+
+
+const { createLightship } = require('lightship');
+const lightshipOptions = {};
+if (process.env.K8S_READINESS_PORT) {
+    lightshipOptions.port = parseInt(process.env.K8S_READINESS_PORT, 10);
+}
+const lightship = createLightship(lightshipOptions);
 
 
 const supportedAuthStrategy = ['basic-auth', 'azure-ad'];
@@ -37,53 +51,60 @@ const {
     createService,
     getLogs,
     deleteService,
-    cleanUp
+    cleanUp: myCleanUp,
 } = require(`./mw/${middleWareName}`);
+
+const cleanUp = async () => {
+    if (!IS_K8S) {
+        // only cleanUp if not in k8s
+        await myCleanUp();
+    }
+}
 
 
 app.route('/:version?/images/json').get(async (req, res) => {
     const filters = req.query.filters ? JSON.parse(req.query.filters) : undefined;
-    console.log(`:: getImage: ${req.url}, filters: ${JSON.stringify(filters)}`);
+    log.info(`:: getImage: ${req.url}, filters: ${JSON.stringify(filters)}`);
 
     const response = await getImage(filters);
-    if(response.status > 299) {
-        console.error('Request failed');
-        console.error(`status : ${response.status}`)
-        console.error(`response : ${JSON.stringify(response.body)}`)
+    if (response.status > 299) {
+        log.error('Request failed');
+        log.error(`status : ${response.status}`)
+        log.error(`response : ${JSON.stringify(response.body)}`)
     }
     return res.status(response.status).json(response.body);
 
 });
 
 app.route('/:version?/services/create').post(async (req, res) => {
-    console.log(`:: createService: ${req.url}, body: ${JSON.stringify(req.body)}`);
+    log.info(`:: createService: ${req.url}, body: ${JSON.stringify(req.body)}`);
     const response = await createService(req.body);
-    if(response.status > 299) {
-        console.error('Request failed');
-        console.error(`status : ${response.status}`)
-        console.error(`response : ${JSON.stringify(response.body)}`)
+    if (response.status > 299) {
+        log.error('Request failed');
+        log.error(`status : ${response.status}`)
+        log.error(`response : ${JSON.stringify(response.body)}`)
     }
     return res.status(response.status).json(response.body);
 
 });
 app.route('/:version?/services/:serviceId/logs').get(async (req, res) => {
-    console.log(`:: getLogs: ${req.url}, serviceId: ${req.params.serviceId}`);
+    log.info(`:: getLogs: ${req.url}, serviceId: ${req.params.serviceId}`);
     const response = await getLogs(req.params.serviceId);
-    if(response.status > 299) {
-        console.error('Request failed');
-        console.error(`status : ${response.status}`)
-        console.error(`response : ${JSON.stringify(response.body)}`)
+    if (response.status > 299) {
+        log.error('Request failed');
+        log.error(`status : ${response.status}`)
+        log.error(`response : ${JSON.stringify(response.body)}`)
     }
     return res.status(response.status).json(response.body);
 
 });
 app.route('/:version?/services/:serviceId').delete(async (req, res) => {
-    console.log(`:: deleteService: ${req.url}, serviceId: ${req.params.serviceId}`);
+    log.info(`:: deleteService: ${req.url}, serviceId: ${req.params.serviceId}`);
     const response = await deleteService(req.params.serviceId);
-    if(response.status > 299) {
-        console.error('Request failed');
-        console.error(`status : ${response.status}`)
-        console.error(`response : ${JSON.stringify(response.body)}`)
+    if (response.status > 299) {
+        log.error('Request failed');
+        log.error(`status : ${response.status}`)
+        log.error(`response : ${JSON.stringify(response.body)}`)
     }
     return res.status(response.status).json(response.body);
 
@@ -96,7 +117,7 @@ app.all('*', (req, res) => {
         body
     } = req;
     if (url != '/favicon.ico') {
-        console.log('Untracked request: ', method, url, body);
+        log.info('Untracked request: ', method, url, body);
     }
     res.sendStatus(404)
 });
@@ -107,22 +128,34 @@ app.use((err, req, res) => {
         url,
         body
     } = req;
-    console.log('Request errored: ', method, url, body);
-    console.error(err);
+    log.info('Request errored: ', method, url, body);
+    log.error(err);
     res.status(500).send(err.message);
 });
 
 (async () => {
 
-    console.log(`--------------- ServiceNow Docker Socket Proxy ---------------`)
-    console.log(`     forwarding all requests to '${middleWareName}' middleware`)
-    console.log(`     using auth strategy '${strategyName}'`)
-    console.log('--------------------------------------------------------------');
+    log.info(`--------------- ServiceNow Docker Socket Proxy ---------------`)
+    log.info(`     forwarding all requests to '${middleWareName}' middleware`)
+    log.info(`     using auth strategy '${strategyName}'`)
+    log.info('--------------------------------------------------------------');
 
     await cleanUp();
 
+    lightship.registerShutdownHandler(async () => {
+        await cleanUp();
+        app.close();
+    });
+
     app.listen(PORT, () => {
-        console.log(`server listening on port ${PORT}`);
+        lightship.signalReady();
+        log.info(`server listening on port ${PORT}`);
+
+        const address = lightship.server.address();
+        log.info(`lightship HTTP service is running on port ${address.port} -  /health, /live, /ready`);
+
+    }).on('error', () => {
+        lightship.shutdown();
     });
 
 })()

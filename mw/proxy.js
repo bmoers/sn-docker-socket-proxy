@@ -1,3 +1,7 @@
+const { Logger } = require("../lib/logger");
+const log = Logger.child({
+    namespace: 'mw/proxy',
+});
 const express = require('express');
 const router = express.Router();
 
@@ -19,16 +23,12 @@ router.use(createProxyMiddleware({
 
         const exchange = `${req.method} ${req.path} -> ${proxyRes.req.protocol}//${proxyRes.req.host}${proxyRes.req.path} [${proxyRes.statusCode}]`;
 
-        console.log('----------------------------------')
-        console.log(exchange);
-        console.log(`RESPONSE : `);
+        log.info('----------------------------------')
+        log.info(exchange);
+        log.info(`RESPONSE : `);
 
         // log original response
-        console.dir(JSON.parse(buffer.toString('utf8')), {
-            depth: null,
-            colors: true,
-            compact: false
-        });
+        log.info(JSON.parse(buffer.toString('utf8')));
         return buffer;
     }),
 
@@ -38,13 +38,9 @@ router.use(createProxyMiddleware({
         }
 
         var bodyData = JSON.stringify(req.body);
-        console.log('----------------------------------')
-        console.log(`REQUEST : `);
-        console.dir(req.body, {
-            depth: null,
-            colors: true,
-            compact: false
-        });
+        log.info('----------------------------------')
+        log.info(`REQUEST : `);
+        log.info(req.body);
 
         proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyData));
         proxyReq.write(bodyData);

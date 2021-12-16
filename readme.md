@@ -283,3 +283,11 @@ CREG_AZURE_RESOURCE_LOCATION=switzerlandnorth
 #HTTP_PROXY_PORT=8080
 
 ```
+
+## Logging
+
+This project uses [`roarr`](https://www.npmjs.com/package/roarr) logger to log the program's state.
+
+Export `ROARR_LOG=true` environment variable to enable log printing to `stdout`.
+
+Use [`roarr-cli`](https://github.com/gajus/roarr-cli) program to pretty-print the logs.

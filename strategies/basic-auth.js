@@ -1,3 +1,7 @@
+const { Logger } = require("../lib/logger");
+const log = Logger.child({
+    namespace: 'strategies/basic-auth',
+});
 
 const BasicStrategy = require('passport-http').BasicStrategy;
 const fs = require('fs-extra');

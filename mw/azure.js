@@ -1,3 +1,7 @@
+const { Logger } = require("../lib/logger");
+const log = Logger.child({
+    namespace: 'mw/azure',
+});
 const {
     ClientSecretCredential
 } = require("@azure/identity");
@@ -22,11 +26,11 @@ const userPasswordBase64 = Buffer.from(process.env.ATF_SN_PASSWORD).toString('ba
 const deleteTimeout = {};
 const options = {}
 
-if(process.env.HTTP_PROXY_HOST){
+if (process.env.HTTP_PROXY_HOST) {
     const proxyOptions = {
         host: process.env.HTTP_PROXY_HOST
     }
-    if(process.env.HTTP_PROXY_PORT){
+    if (process.env.HTTP_PROXY_PORT) {
         proxyOptions.port = parseInt(process.env.HTTP_PROXY_PORT, 10);
     }
     options.proxyOptions = proxyOptions;
@@ -47,13 +51,13 @@ const deleteContainerGroup = async (containerGroupName) => {
         await client.containerGroups.get(resourceGroupName, containerGroupName);
         // get() fails if the container does not exist
         await client.containerGroups.deleteMethod(resourceGroupName, containerGroupName);
-        return console.log(`containerGroup '${containerGroupName}' successfully deleted`);
+        return log.info(`containerGroup '${containerGroupName}' successfully deleted`);
 
     } catch (error) {
         if (error.response) {
-            return console.error(`deletion of containerGroup '${containerGroupName}' failed with:`, error.response.status, error.response.body);
+            return log.error(`deletion of containerGroup '${containerGroupName}' failed with:`, error.response.status, error.response.body);
         }
-        console.error(error);
+        log.error(error);
     }
 }
 
@@ -70,9 +74,9 @@ const cleanUp = async () => {
     if (!res.length)
         return;
 
-    console.log(`ContainerResources deleted: ${res.length}`)
+    log.info(`ContainerResources deleted: ${res.length}`)
     res.forEach((containerGroup, index) => {
-        console.log(`#${index}\t${containerGroup.name} (${containerGroup.id})`);
+        log.info(`#${index}\t${containerGroup.name} (${containerGroup.id})`);
     })
 }
 
@@ -174,19 +178,16 @@ const createService = async (payload) => {
             "tags": {}
         };
 
-        /*
-        console.log('----------------createService body----------------------');
-        console.dir(payload, {
-            depth: null
-        });
+        if (process.env.DEBUG) {
+            log.debug('----------------createService body----------------------');
+            log.debug(payload);
 
-        console.log('----------------createService request----------------------');
-        console.dir(data, {
-            depth: null
-        });
-        */
+            log.debug('----------------createService request----------------------');
+            log.debug(data);
+        }
 
-        console.log(`Create containerGroup ${containerGroupName}`);
+
+        log.info(`Create containerGroup ${containerGroupName}`);
 
         /*
          * create the container-group but dont wait for it to be started!
@@ -195,22 +196,22 @@ const createService = async (payload) => {
 
             const timeOutSec = parseInt((env.TIMEOUT_MINS || 60), 10) * 60;
 
-            console.log(`ContainerGroup ${resourceGroupName} ${containerGroupName} creation result:`);
-            console.log(`\tcontainerGroup: ${create.name}`);
-            console.log(`\tprovisioningState: ${create.provisioningState}`);
-            console.log(`\tgroup will automatically be destroyed in ${timeOutSec} seconds`);
+            log.info(`ContainerGroup ${resourceGroupName} ${containerGroupName} creation result:`);
+            log.info(`\tcontainerGroup: ${create.name}`);
+            log.info(`\tprovisioningState: ${create.provisioningState}`);
+            log.info(`\tgroup will automatically be destroyed in ${timeOutSec} seconds`);
 
             deleteTimeout[containerGroupName] = setTimeout(async () => {
-                console.log(`schedule delete containerGroup'${containerGroupName}' now`);
+                log.info(`schedule delete containerGroup'${containerGroupName}' now`);
                 await deleteContainerGroup(containerGroupName)
 
             }, timeOutSec * 1000);
 
         }).catch((error) => {
             if (error.response) {
-                return console.log(`creation of containerGroup '${containerGroupName}' failed with:`, error.response.status, error.response.body);
+                return log.info(`creation of containerGroup '${containerGroupName}' failed with:`, error.response.status, error.response.body);
             }
-            console.error(error);
+            log.error(error);
         });
 
         response.status = 201; // CREATED
@@ -218,12 +219,12 @@ const createService = async (payload) => {
             ID: containerName
         }
     } catch (error) {
-        console.log(error);
+        log.info(error);
         if (error.response) {
             response.status = error.response.status;
             response.body = error.body;
         } else {
-            console.error(error);
+            log.error(error);
         }
     }
     return response;
@@ -253,7 +254,7 @@ const getLogs = async (containerName) => {
             response.status = error.response.status;
             response.body = error.body;
         } else {
-            console.error(error);
+            log.error(error);
         }
     }
     return response;
@@ -286,7 +287,7 @@ const deleteService = async (containerName) => {
             response.status = error.response.status;
             response.body = error.body;
         } else {
-            console.error(error);
+            log.error(error);
         }
     }
     return response;
