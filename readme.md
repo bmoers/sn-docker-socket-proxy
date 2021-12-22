@@ -12,6 +12,8 @@
     - [Oauth Client Credentials flow with Azure](#oauth-client-credentials-flow-with-azure)
   - [Azure Container Group Settings](#azure-container-group-settings)
   - [Run the Docker Socket Proxy](#run-the-docker-socket-proxy)
+- [K8s Liveness Probes](#k8s-liveness-probes)
+- [Logging](#logging)
 
 ## Introduction
 
@@ -282,7 +284,30 @@ CREG_AZURE_RESOURCE_LOCATION=switzerlandnorth
 #HTTP_PROXY_HOST=gate.company.com
 #HTTP_PROXY_PORT=8080
 
+# ----------------------------------------------------------------
+# K8s Readiness API Configuration (/health, /live,  /ready)
+
+K8S_READINESS_PORT=9000
+
+
+# ----------------------------------------------------------------
+# Logging
+# to enable json structured logging (roarr), set this to true
+ROARR_LOG=true
+# to enable debug logging, set this to true
+#DEBUG=true
+
 ```
+
+## K8s Liveness Probes
+
+If running in a K8s environment, liveness checks can be configured using the following endpoints:
+
+- /health
+- /live
+- /ready
+
+The endpoints are exposed on the port configured with `K8S_READINESS_PORT` (default 9000).
 
 ## Logging
 
