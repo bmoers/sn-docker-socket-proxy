@@ -78,7 +78,7 @@ The integration landscape is:
          - Client ID: The **Client ID** to use for authentication
          - Client Secret: The **Client secret** to use for authentication
          - Default Grant type: **Client Credentials**
-         - Token Url: The URL to use for authentication (e.g. https://login.microsoftonline.com/<tenant-id>/oauth2/v2.0/token)
+         - Token Url: The URL to use for authentication (e.g. `https://login.microsoftonline.com/<tenant-id>/oauth2/v2.0/token`)
          - Select Save (not Submit) and stay on the page.
          - A **Oauth Entity Profile** was automatically added with name of the application registry ending with **_default_profile**.
          - Open this **Oauth Entity Profile** and click on **insert a new row...** to add a scope.
@@ -86,7 +86,7 @@ The integration landscape is:
          - Fill in these fields:
             - Name: **default**
             - Oauth Provider: the name of the application registry you created in the beginning of step 3.
-            - Scope: The name of the scope. (e.g. api://00000000-1111-0000-111111111111111111/.default)
+            - Scope: The name of the scope. (e.g. `api://00000000-1111-0000-111111111111111111/.default`)
             - Select Submit.
          - Select this default profile.
          - Select Update.
