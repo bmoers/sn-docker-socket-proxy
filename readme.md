@@ -211,6 +211,8 @@ Update the environment variables (.env file below) with the following:
 - `CREG_AZURE_SUBSCRIPTION_ID` = The subscription ID
 - `CREG_AZURE_RESOURCE_GROUP_NAME` The resource group (e.g. rg-co-cicdsnow-dev-001)
 - `CREG_AZURE_RESOURCE_LOCATION` The resource location (e.g. switzerlandnorth)
+- `CREG_AZURE_RESOURCES_CPU` CPU's assigned to the container
+- `CREG_AZURE_RESOURCES_MEM_GB` RAM assigned to the container
 
 ### Run the Docker Socket Proxy
 
@@ -274,6 +276,10 @@ CREG_AZURE_RESOURCE_GROUP_NAME=rg-co-cicdsnow-dev-001
 # The resource location
 CREG_AZURE_RESOURCE_LOCATION=switzerlandnorth
 
+# CPU's assigned to the container, default to 1
+CREG_AZURE_RESOURCES_CPU=1
+# RAM assigned to the container, default to 1.5
+CREG_AZURE_RESOURCES_MEM_GB=2.5
 
 # ----------------------------------------------------------------
 # Network Configuration
