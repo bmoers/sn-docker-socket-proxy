@@ -21,7 +21,8 @@ const subscriptionId = process.env.CREG_AZURE_SUBSCRIPTION_ID;
 const containerGroupLocation = process.env.CREG_AZURE_RESOURCE_LOCATION;
 const userPasswordBase64 = Buffer.from(process.env.ATF_SN_PASSWORD).toString('base64');
 
-
+const resourceCpu = parseInt((process.env.CREG_AZURE_RESOURCES_CPU || 1), 10);
+const resourceMemoryInGB = parseFloat((process.env.CREG_AZURE_RESOURCES_MEM_GB || 1.5), 10);
 
 const deleteTimeout = {};
 const options = {}
@@ -157,8 +158,8 @@ const createService = async (payload) => {
                 "image": image,
                 "resources": {
                     "requests": {
-                        "cpu": 1,
-                        "memoryInGB": 1.5
+                        "cpu": resourceCpu,
+                        "memoryInGB": resourceMemoryInGB
                     }
                 },
                 "environmentVariables": environmentVariables,
