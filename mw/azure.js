@@ -130,6 +130,7 @@ const createService = async (payload) => {
 
         const spec = payload.TaskTemplate.ContainerSpec;
         const image = spec.Image;
+        const osType = (image || '' ).toLowerCase().includes(':win') ? 'Windows' : 'Linux';
         const env = spec.Env.reduce((out, tmp) => {
             const arr = tmp.split('=');
             const name = arr[0];
@@ -169,7 +170,7 @@ const createService = async (payload) => {
                 }]
             }],
             "restartPolicy": "Never", //OnFailure
-            "osType": "Linux",
+            "osType": osType,
             "volumes": [{
                 "name": "secrets-volume-01",
                 "secret": {
