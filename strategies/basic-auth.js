@@ -1,7 +1,4 @@
-const { Logger } = require("../lib/logger");
-const log = Logger.child({
-    namespace: 'strategies/basic-auth',
-});
+const log= require('../lib/logger').topic(module);
 
 const BasicStrategy = require('passport-http').BasicStrategy;
 const fs = require('fs-extra');
@@ -19,7 +16,7 @@ require('../lib/mandatory.js')(mandatoryVars);
 
 
 const data = fs.readFileSync(process.env.AUTH_BASIC_HTPASSWD_FILE, 'ascii');
-const lines = data.split("\n");
+const lines = data.split('\n');
 const lineCount = lines.length;
 const users = {};
 for (let i = 0; i < lineCount; i++) {
@@ -27,11 +24,11 @@ for (let i = 0; i < lineCount; i++) {
     if (!line) {
         continue;
     }
-    let [username, hash, ...rest] = line.split(":");
+    let [username, hash, ...rest] = line.split(':');
     if (rest.length !== 0) {
         continue;
     }
-    if (!hash.startsWith("$2y$")) {
+    if (!hash.startsWith('$2y$')) {
         continue;
     }
     users[username] = hash;

@@ -1,9 +1,6 @@
-require("dotenv").config();
+require('dotenv').config();
 
-const { Logger } = require("./lib/logger");
-const log = Logger.child({
-    namespace: 'debug',
-});
+const log = require('./lib/logger').topic(module);
 
 const proxyMiddleware = require('./mw/proxy');
 const express = require('express');

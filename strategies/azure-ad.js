@@ -1,7 +1,4 @@
-const { Logger } = require("../lib/logger");
-const log = Logger.child({
-    namespace: 'strategies/azure-ad',
-});
+const log = require('../lib/logger').topic(module);
 
 const BearerStrategy = require('passport-azure-ad').BearerStrategy;
 
@@ -20,14 +17,14 @@ const config = {
         role: process.env.AUTH_AZURE_ROLE
     },
     metadata: {
-        authority: "login.microsoftonline.com",
-        discovery: ".well-known/openid-configuration",
-        version: "v2.0"
+        authority: 'login.microsoftonline.com',
+        discovery: '.well-known/openid-configuration',
+        version: 'v2.0'
     },
     settings: {
         validateIssuer: true,
         passReqToCallback: false,
-        loggingLevel: "warn"
+        loggingLevel: 'warn'
     }
 }
 
@@ -41,19 +38,19 @@ const options = {
     loggingLevel: config.settings.loggingLevel
 };
 
-if(config.resource.scope.length){
+if (config.resource.scope.length) {
     options.scope = config.resource.scope;
 }
 
 const authStrategy = new BearerStrategy(options, (token, done) => {
     try {
-        if(config.resource.role){
+        if (config.resource.role) {
             // user must have a specific role
             if (!(token.roles || []).includes(config.resource.role)) {
                 return done(null, false, { message: 'Incorrect role.' });
             }
         }
-        
+
         // Send user info using the second argument
         return done(null, { username: undefined }, token);
     } catch (err) {
