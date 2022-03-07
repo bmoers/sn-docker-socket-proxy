@@ -3,6 +3,7 @@ FROM node:16
 
 ENV NODE_ENV production
 ENV NODE_EXTRA_CA_CERTS /etc/ssl/certs/ca-certificates.crt
+ENV KUBERNETES_SERVICE_HOST dummy
 
 RUN apt-get clean && \
     apt-get update -y && \
@@ -28,4 +29,5 @@ ADD ./app.js ./debug.js ./
 
 EXPOSE 8080
 
-CMD node app.js
+ENTRYPOINT ["node"]
+CMD ["app.js"]
