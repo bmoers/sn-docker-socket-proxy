@@ -280,6 +280,24 @@ CREG_AZURE_RESOURCES_CPU=1
 # RAM assigned to the container, default to 1.5
 CREG_AZURE_RESOURCES_MEM_GB=2.5
 
+
+# ----------------------------------------------------------------
+# Container cleanup settings
+#
+# destroy ATF containers running longer than this, default to 1441
+CONTAINER_TIMEOUT_MINS=1441
+# check for unused, idle ATF container instances
+CONTAINER_CLEANUP_INTERVAL=0 0 * * * *
+#                          ┬ ┬ ┬ ┬ ┬ ┬
+#                          │ │ │ │ │ │
+#                          │ │ │ │ │ └ day of week (0 - 7) (0 or 7 is Sun)
+#                          │ │ │ │ └── month (1 - 12)
+#                          │ │ │ └──── day of month (1 - 31)
+#                          │ │ └────── hour (0 - 23)
+#                          │ └──────── minute (0 - 59)
+#                          └────────── second (0 - 59, OPTIONAL)
+
+
 # ----------------------------------------------------------------
 # Network Configuration
 # change the http port
@@ -297,6 +315,7 @@ K8S_READINESS_PORT=9000
 
 # ----------------------------------------------------------------
 # Logging
+#
 # log format text, json
 LOG_FORMAT=json
 # set log level info, warn, error, debug
