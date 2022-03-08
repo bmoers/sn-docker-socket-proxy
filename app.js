@@ -8,6 +8,8 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const passport = require('passport');
 const app = express();
+const schedule = require('node-schedule');
+
 
 // configure ROARR logger for lightship
 if ('json' == process.env.LOG_FORMAT) {
@@ -29,12 +31,12 @@ const supportedMw = ['dockerd', 'azure'];
 
 const authStrategyName = (process.env.AUTH_STRATEGY || supportedAuthStrategy[0]).toLowerCase();
 if (!supportedAuthStrategy.includes(authStrategyName)) {
-    throw new Error(`Auth-Strategy ${authStrategyName} not found.`)
+    throw new Error(`Auth-Strategy ${authStrategyName} not found in ${supportedAuthStrategy}.`)
 }
 
 const middleWareName = (process.env.CREG_MIDDLE_WARE || supportedMw[0]).toLowerCase();
 if (!supportedMw.includes(middleWareName)) {
-    throw new Error(`Middleware ${middleWareName} not found.`)
+    throw new Error(`Middleware ${middleWareName} not found in ${supportedMw}.`)
 }
 
 
@@ -54,6 +56,7 @@ const {
     getLogs,
     deleteService,
     cleanUp,
+    scheduleCleanUp,
 } = require(`./mw/${middleWareName}`);
 
 
@@ -134,15 +137,25 @@ app.use((err, req, res) => {
     log.info(`     forwarding all requests to '${middleWareName}' middleware`)
     log.info(`     using auth strategy '${strategyName}'`)
     log.info('--------------------------------------------------------------');
+    
+    await scheduleCleanUp();
 
-    await cleanUp();
+    log.info('process.env.CONTAINER_CLEANUP_INTERVAL %s', process.env.CONTAINER_CLEANUP_INTERVAL)
+
+    const interval = (process.env.CONTAINER_CLEANUP_INTERVAL || '0 */5 * * * *').replace(/["']/g, '');
+    const job = schedule.scheduleJob(interval, async () => {
+        await scheduleCleanUp();
+    });
 
     lightship.registerShutdownHandler(async () => {
 
         log.info('Application Shutdown detected.');
 
-        log.info('Cleanup ATF Test Runners');
-        await cleanUp();
+        log.info('Shutdown Scheduled Cleanup Job');
+        await job.gracefulShutdown();
+
+        log.info('Cleanup Unused ATF Test Runners');
+        await Promise.all([scheduleCleanUp(), cleanUp()]);
 
         log.info('Closing HTTP Application');
         app.close();

@@ -47,6 +47,7 @@ const deleteContainerGroup = async (containerGroupName) => {
     // delete the container-group
     const client = new ContainerInstanceManagementClient(credential, subscriptionId);
     try {
+        log.info('delete containerGroupName %s', containerGroupName);
         await client.containerGroups.get(resourceGroupName, containerGroupName);
         // get() fails if the container does not exist
         const containerGroup = await client.containerGroups.deleteMethod(resourceGroupName, containerGroupName);
@@ -60,29 +61,11 @@ const deleteContainerGroup = async (containerGroupName) => {
 }
 
 /**
- * remove all containerGroups where the  name starts with the 'containerGroupPrefix' prefix
- */
-const cleanUp = async () => {
-
-    const res = await Promise.all(Object.keys(containerInstances).map((containerGroupName => {
-        clearTimeout(containerInstances[containerGroupName])
-        return deleteContainerGroup(containerGroupName);
-    })))
-
-    if (!res.length)
-        return;
-
-    log.info(`Number of deleted ContainerResources: ${res.length}`)
-}
-
-/**
  * fake response to servicenow - assuming the image is available on the Azure side
  * @param {*} filters 
  * @returns 
  */
-const getImage = async (filters = {
-    reference: []
-}) => {
+const getImage = async (filters = { reference: [] }) => {
 
     const body = [{
         'Containers': -1,
@@ -184,7 +167,8 @@ const createService = async (payload) => {
 
 
         log.info(`Create containerGroup ${containerGroupName}`);
-
+        containerInstances[containerGroupName] = true;
+        log.info('Container instances : %s', Object.keys(containerInstances))
         /*
          * create the container-group but dont wait for it to be started!
            Unfortunately ServiceNow can't wait that long.... */
@@ -289,10 +273,64 @@ const deleteService = async (containerName) => {
     return response;
 }
 
+/**
+ * remove all containerGroups where the  name starts with the 'containerGroupPrefix' prefix
+ */
+const cleanUp = async () => {
+
+    log.info('Container instances : %s', Object.keys(containerInstances))
+    const res = await Promise.all(Object.keys(containerInstances).map((containerGroupName => {
+
+        log.info('Container instance to be stopped : %s', containerGroupName)
+
+        clearTimeout(containerInstances[containerGroupName])
+        return deleteContainerGroup(containerGroupName);
+    })))
+
+    if (!res.length)
+        return;
+
+    log.info(`Number of deleted ContainerResources: ${res.length}`);
+}
+
+/**
+ * periodically delete unused container instances
+ * Criteria is:
+ *  - name starts with the containerGroupPrefix
+ *  - CreatedOnDate exists and is older than process.env.CONTAINER_TIMEOUT_MINS
+ */
+ const scheduleCleanUp = async () => {
+
+    log.info('Clean Up old Container Instances')
+
+    const client = new ContainerInstanceManagementClient(credential, subscriptionId);
+    const list = await client.containerGroups.list();
+
+    const timeOutMsSec = parseInt((process.env.CONTAINER_TIMEOUT_MINS || 1441), 10) * 60 * 1000;
+    await Promise.all(list.filter((group) => {
+
+        const isRunnerContainer = group.name.startsWith(containerGroupPrefix);
+        if (!isRunnerContainer)
+            return false;
+
+        // if there is no date, delete it
+        if (!group.tags.CreatedOnDate)
+            return true;
+
+        const now = new Date().getTime();
+        const created = new Date(group.tags.CreatedOnDate).getTime();
+        return (now > created + timeOutMsSec)
+
+    }).map((group) => {
+        return deleteContainerGroup(group.name);
+    }));
+}
+
 module.exports = {
     getImage,
     createService,
     getLogs,
     deleteService,
-    cleanUp
+    cleanUp,
+    scheduleCleanUp
 }

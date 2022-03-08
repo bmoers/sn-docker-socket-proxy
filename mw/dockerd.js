@@ -44,10 +44,16 @@ const createService = async (payload) => {
         body: undefined
     }
     try {
+
+        // add labels to the services, so we can identify them later
+        payload.Labels = payload.Labels || {};
+        payload.Labels.CreatedOnDate = `${Date.now()}`;
+        payload.Labels.ATFRunner = 'true';
+
         const request = await instance.post('/services/create', payload);
         response.status = request.status;
         response.body = request.data;
-        if(response.body['ID']){
+        if (response.body['ID']) {
             const serviceId = response.body['ID'];
             containerInstances[serviceId] = true;
         }
@@ -92,15 +98,18 @@ const deleteService = async (serviceId) => {
         status: 500,
         body: undefined
     }
+    log.info('delete serviceId %s', serviceId);
     try {
         const request = await instance.delete(`/services/${serviceId}`);
         response.status = request.status;
         response.body = request.data;
 
         delete containerInstances[serviceId];
+        return log.info(`serviceId ${serviceId} successfully deleted`);
 
     } catch (error) {
         if (error.response) {
+            log.error(`deletion of service '${serviceId}' failed with:`, error.response.status, error.response.body);
             response.status = error.response.status;
             response.body = {
                 ...error.response.data
@@ -128,10 +137,44 @@ const cleanUp = async () => {
     log.info(`Number of deleted Docker Service: ${res.length}`)
 }
 
+/**
+ * periodically delete unused container services
+ * Criteria is:
+ *  - label.ATFRunner is set
+ *  - label.CreatedOnDate exists and is older than process.env.CONTAINER_TIMEOUT_MINS
+ */
+const scheduleCleanUp = async () => {
+    
+    log.info('Clean Up old Container Services')
+
+    const request = await instance.get('/services');
+    const list = request.data;
+    const timeOutMsSec = parseInt((process.env.CONTAINER_TIMEOUT_MINS || 1441), 10) * 60 * 1000;
+
+    await Promise.all(list.filter((service) => {
+        
+        if(!service.Spec || !service.Spec.Labels || service.Spec.Labels.ATFRunner != 'true')
+            return false;
+
+        const CreatedOnDate = service.Spec.Labels.CreatedOnDate;
+        // if there is no date, delete it
+        if (!CreatedOnDate)
+            return true;
+
+        const now = new Date().getTime();
+        const created = parseInt(CreatedOnDate, 10);
+        return (now > created + timeOutMsSec)
+
+    }).map((service) => {
+        return deleteService(service.ID);
+    }));
+}
+
 module.exports = {
     getImage,
     createService,
     getLogs,
     deleteService,
-    cleanUp
+    cleanUp,
+    scheduleCleanUp
 }
