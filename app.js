@@ -13,9 +13,6 @@ const app = express();
 if ('json' == process.env.LOG_FORMAT) {
     process.env.ROARR_LOG = 'true'
 }
-if ('true' == process.env.LOG_LEVEL) {
-    process.env.DEBUG = 'true'
-}
 const { createLightship } = require('lightship');
 const lightshipOptions = {
     //detectKubernetes: false, -- for local development
