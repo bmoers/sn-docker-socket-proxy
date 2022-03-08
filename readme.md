@@ -13,7 +13,6 @@
   - [Azure Container Group Settings](#azure-container-group-settings)
   - [Run the Docker Socket Proxy](#run-the-docker-socket-proxy)
 - [K8s Liveness Probes](#k8s-liveness-probes)
-- [Logging](#logging)
 
 ## Introduction
 
@@ -281,6 +280,24 @@ CREG_AZURE_RESOURCES_CPU=1
 # RAM assigned to the container, default to 1.5
 CREG_AZURE_RESOURCES_MEM_GB=2.5
 
+
+# ----------------------------------------------------------------
+# Container cleanup settings
+#
+# destroy ATF containers running longer than this, default to 1441
+CONTAINER_TIMEOUT_MINS=1441
+# check for unused, idle ATF container instances
+CONTAINER_CLEANUP_INTERVAL=0 0 * * * *
+#                          ┬ ┬ ┬ ┬ ┬ ┬
+#                          │ │ │ │ │ │
+#                          │ │ │ │ │ └ day of week (0 - 7) (0 or 7 is Sun)
+#                          │ │ │ │ └── month (1 - 12)
+#                          │ │ │ └──── day of month (1 - 31)
+#                          │ │ └────── hour (0 - 23)
+#                          │ └──────── minute (0 - 59)
+#                          └────────── second (0 - 59, OPTIONAL)
+
+
 # ----------------------------------------------------------------
 # Network Configuration
 # change the http port
@@ -298,10 +315,11 @@ K8S_READINESS_PORT=9000
 
 # ----------------------------------------------------------------
 # Logging
-# to enable json structured logging (roarr), set this to true
-ROARR_LOG=true
-# to enable debug logging, set this to true
-#DEBUG=true
+#
+# log format text, json
+LOG_FORMAT=json
+# set log level info, warn, error, debug
+LOG_LEVEL=info
 
 ```
 
@@ -315,10 +333,3 @@ If running in a K8s environment, liveness checks can be configured using the fol
 
 The endpoints are exposed on the port configured with `K8S_READINESS_PORT` (default 9000).
 
-## Logging
-
-This project uses [`roarr`](https://www.npmjs.com/package/roarr) logger to log the program's state.
-
-Export `ROARR_LOG=true` environment variable to enable log printing to `stdout`.
-
-Use [`roarr-cli`](https://github.com/gajus/roarr-cli) program to pretty-print the logs.

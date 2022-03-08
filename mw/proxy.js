@@ -1,7 +1,5 @@
-const { Logger } = require("../lib/logger");
-const log = Logger.child({
-    namespace: 'mw/proxy',
-});
+const log= require('../lib/logger').topic(module);
+
 const express = require('express');
 const router = express.Router();
 
@@ -12,7 +10,7 @@ const {
 
 const http = require('http');
 const agent = new http.Agent({
-    socketPath: "/var/run/docker.sock",
+    socketPath: '/var/run/docker.sock',
 });
 
 router.use(createProxyMiddleware({
@@ -25,7 +23,7 @@ router.use(createProxyMiddleware({
 
         log.info('----------------------------------')
         log.info(exchange);
-        log.info(`RESPONSE : `);
+        log.info('RESPONSE : ');
 
         // log original response
         log.info(JSON.parse(buffer.toString('utf8')));
@@ -39,7 +37,7 @@ router.use(createProxyMiddleware({
 
         var bodyData = JSON.stringify(req.body);
         log.info('----------------------------------')
-        log.info(`REQUEST : `);
+        log.info('REQUEST : ');
         log.info(req.body);
 
         proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyData));

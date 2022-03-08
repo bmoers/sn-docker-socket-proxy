@@ -1,13 +1,11 @@
-const { Logger } = require("../lib/logger");
-const log = Logger.child({
-    namespace: 'mw/azure',
-});
+const log = require('../lib/logger').topic(module);
+
 const {
     ClientSecretCredential
-} = require("@azure/identity");
+} = require('@azure/identity');
 const {
     ContainerInstanceManagementClient
-} = require("@azure/arm-containerinstance");
+} = require('@azure/arm-containerinstance');
 
 
 const mandatoryVars = ['CREG_AZURE_TENANT_ID', 'CREG_AZURE_CLIENT_ID', 'CREG_AZURE_CLIENT_SECRET', 'CREG_AZURE_RESOURCE_GROUP_NAME', 'CREG_AZURE_SUBSCRIPTION_ID', 'CREG_AZURE_RESOURCE_LOCATION', 'ATF_SN_PASSWORD']
@@ -24,7 +22,7 @@ const userPasswordBase64 = Buffer.from(process.env.ATF_SN_PASSWORD).toString('ba
 const resourceCpu = parseInt((process.env.CREG_AZURE_RESOURCES_CPU || 1), 10);
 const resourceMemoryInGB = parseFloat((process.env.CREG_AZURE_RESOURCES_MEM_GB || 1.5), 10);
 
-const deleteTimeout = {};
+const containerInstances = {};
 const options = {}
 
 if (process.env.HTTP_PROXY_HOST) {
@@ -49,36 +47,17 @@ const deleteContainerGroup = async (containerGroupName) => {
     // delete the container-group
     const client = new ContainerInstanceManagementClient(credential, subscriptionId);
     try {
+        log.info('delete containerGroupName %s', containerGroupName);
         await client.containerGroups.get(resourceGroupName, containerGroupName);
         // get() fails if the container does not exist
-        await client.containerGroups.deleteMethod(resourceGroupName, containerGroupName);
-        return log.info(`containerGroup '${containerGroupName}' successfully deleted`);
+        const containerGroup = await client.containerGroups.deleteMethod(resourceGroupName, containerGroupName);
+        return log.info(`containerGroup ${containerGroup.name} (${containerGroup.id}) successfully deleted`);
 
     } catch (error) {
         if (error.response) {
             return log.error(`deletion of containerGroup '${containerGroupName}' failed with:`, error.response.status, error.response.body);
         }
-        log.error(error);
     }
-}
-
-/**
- * remove all containerGroups where the  name starts with the 'containerGroupPrefix' prefix
- */
-const cleanUp = async () => {
-    const client = new ContainerInstanceManagementClient(credential, subscriptionId);
-    const list = await client.containerGroups.list();
-
-    const res = await Promise.all(list.filter((group) => group.name.startsWith(containerGroupPrefix)).map((group) => {
-        return client.containerGroups.deleteMethod(resourceGroupName, group.name);
-    }));
-    if (!res.length)
-        return;
-
-    log.info(`ContainerResources deleted: ${res.length}`)
-    res.forEach((containerGroup, index) => {
-        log.info(`#${index}\t${containerGroup.name} (${containerGroup.id})`);
-    })
 }
 
 /**
@@ -86,21 +65,19 @@ const cleanUp = async () => {
  * @param {*} filters 
  * @returns 
  */
-const getImage = async (filters = {
-    reference: []
-}) => {
+const getImage = async (filters = { reference: [] }) => {
 
     const body = [{
-        "Containers": -1,
-        "Created": 1624041926,
-        "Id": "sha256:564c2cc2729fab64024883404d64332ce20596f5b29444e44a539bc8615787f6",
-        "Labels": null,
-        "ParentId": "",
-        "RepoDigests": null,
-        "RepoTags": filters.reference,
-        "SharedSize": -1,
-        "Size": 1076704188,
-        "VirtualSize": 1076704188
+        'Containers': -1,
+        'Created': 1624041926,
+        'Id': 'sha256:564c2cc2729fab64024883404d64332ce20596f5b29444e44a539bc8615787f6',
+        'Labels': null,
+        'ParentId': '',
+        'RepoDigests': null,
+        'RepoTags': filters.reference,
+        'SharedSize': -1,
+        'Size': 1076704188,
+        'VirtualSize': 1076704188
     }];
 
     const response = {
@@ -130,7 +107,7 @@ const createService = async (payload) => {
 
         const spec = payload.TaskTemplate.ContainerSpec;
         const image = spec.Image;
-        const osType = (image || '' ).toLowerCase().includes(':win') ? 'Windows' : 'Linux';
+        const osType = (image || '').toLowerCase().includes(':win') ? 'Windows' : 'Linux';
         const env = spec.Env.reduce((out, tmp) => {
             const arr = tmp.split('=');
             const name = arr[0];
@@ -150,34 +127,34 @@ const createService = async (payload) => {
         });
 
         const data = {
-            "location": containerGroupLocation,
-            "name": containerGroupName,
-            "type": "Microsoft.ContainerInstance/containerGroups",
-            "apiVersion": "2021-07-01",
-            "containers": [{
-                "name": containerName,
-                "image": image,
-                "resources": {
-                    "requests": {
-                        "cpu": resourceCpu,
-                        "memoryInGB": resourceMemoryInGB
+            'location': containerGroupLocation,
+            'name': containerGroupName,
+            'type': 'Microsoft.ContainerInstance/containerGroups',
+            'apiVersion': '2021-07-01',
+            'containers': [{
+                'name': containerName,
+                'image': image,
+                'resources': {
+                    'requests': {
+                        'cpu': resourceCpu,
+                        'memoryInGB': resourceMemoryInGB
                     }
                 },
-                "environmentVariables": environmentVariables,
-                "volumeMounts": [{
-                    "name": "secrets-volume-01",
-                    "mountPath": secretMountPath
+                'environmentVariables': environmentVariables,
+                'volumeMounts': [{
+                    'name': 'secrets-volume-01',
+                    'mountPath': secretMountPath
                 }]
             }],
-            "restartPolicy": "Never", //OnFailure
-            "osType": osType,
-            "volumes": [{
-                "name": "secrets-volume-01",
-                "secret": {
+            'restartPolicy': 'Never', //OnFailure
+            'osType': osType,
+            'volumes': [{
+                'name': 'secrets-volume-01',
+                'secret': {
                     [secretFileName]: userPasswordBase64
                 }
             }],
-            "tags": {}
+            'tags': {}
         };
 
         if (process.env.DEBUG) {
@@ -190,7 +167,8 @@ const createService = async (payload) => {
 
 
         log.info(`Create containerGroup ${containerGroupName}`);
-
+        containerInstances[containerGroupName] = true;
+        log.info('Container instances : %s', Object.keys(containerInstances))
         /*
          * create the container-group but dont wait for it to be started!
            Unfortunately ServiceNow can't wait that long.... */
@@ -203,7 +181,7 @@ const createService = async (payload) => {
             log.info(`\tprovisioningState: ${create.provisioningState}`);
             log.info(`\tgroup will automatically be destroyed in ${timeOutSec} seconds`);
 
-            deleteTimeout[containerGroupName] = setTimeout(async () => {
+            containerInstances[containerGroupName] = setTimeout(async () => {
                 log.info(`schedule delete containerGroup'${containerGroupName}' now`);
                 await deleteContainerGroup(containerGroupName)
 
@@ -278,7 +256,7 @@ const deleteService = async (containerName) => {
         const containerGroupName = `${containerGroupPrefix}${containerName}`;
 
         // cancel the deleteTimeout
-        clearTimeout(deleteTimeout[containerGroupName]);
+        clearTimeout(containerInstances[containerGroupName]);
 
         await deleteContainerGroup(containerGroupName);
 
@@ -295,10 +273,64 @@ const deleteService = async (containerName) => {
     return response;
 }
 
+/**
+ * remove all containerGroups where the  name starts with the 'containerGroupPrefix' prefix
+ */
+const cleanUp = async () => {
+
+    log.info('Container instances : %s', Object.keys(containerInstances))
+    const res = await Promise.all(Object.keys(containerInstances).map((containerGroupName => {
+
+        log.info('Container instance to be stopped : %s', containerGroupName)
+
+        clearTimeout(containerInstances[containerGroupName])
+        return deleteContainerGroup(containerGroupName);
+    })))
+
+    if (!res.length)
+        return;
+
+    log.info(`Number of deleted ContainerResources: ${res.length}`);
+}
+
+/**
+ * periodically delete unused container instances
+ * Criteria is:
+ *  - name starts with the containerGroupPrefix
+ *  - CreatedOnDate exists and is older than process.env.CONTAINER_TIMEOUT_MINS
+ */
+ const scheduleCleanUp = async () => {
+
+    log.info('Clean Up old Container Instances')
+
+    const client = new ContainerInstanceManagementClient(credential, subscriptionId);
+    const list = await client.containerGroups.list();
+
+    const timeOutMsSec = parseInt((process.env.CONTAINER_TIMEOUT_MINS || 1441), 10) * 60 * 1000;
+    await Promise.all(list.filter((group) => {
+
+        const isRunnerContainer = group.name.startsWith(containerGroupPrefix);
+        if (!isRunnerContainer)
+            return false;
+
+        // if there is no date, delete it
+        if (!group.tags.CreatedOnDate)
+            return true;
+
+        const now = new Date().getTime();
+        const created = new Date(group.tags.CreatedOnDate).getTime();
+        return (now > created + timeOutMsSec)
+
+    }).map((group) => {
+        return deleteContainerGroup(group.name);
+    }));
+}
+
 module.exports = {
     getImage,
     createService,
     getLogs,
     deleteService,
-    cleanUp
+    cleanUp,
+    scheduleCleanUp
 }

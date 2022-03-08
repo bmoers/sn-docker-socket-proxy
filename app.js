@@ -1,21 +1,25 @@
-require("dotenv").config();
+require('dotenv').config();
 
-const { Logger } = require("./lib/logger");
-const log = Logger.child({
-    namespace: 'app',
-});
+const log = require('./lib/logger').topic(module);
 
 const PORT = parseInt(process.env.PORT || 8080, 10);
-const IS_K8S = Boolean(process.env.KUBERNETES_SERVICE_HOST);
 
 const express = require('express');
 const bodyParser = require('body-parser');
-const passport = require("passport");
+const passport = require('passport');
 const app = express();
+const schedule = require('node-schedule');
 
 
+// configure ROARR logger for lightship
+if ('json' == process.env.LOG_FORMAT) {
+    process.env.ROARR_LOG = 'true'
+}
 const { createLightship } = require('lightship');
-const lightshipOptions = {};
+const lightshipOptions = {
+    //detectKubernetes: false, -- for local development
+    shutdownDelay: 0
+};
 if (process.env.K8S_READINESS_PORT) {
     lightshipOptions.port = parseInt(process.env.K8S_READINESS_PORT, 10);
 }
@@ -27,12 +31,12 @@ const supportedMw = ['dockerd', 'azure'];
 
 const authStrategyName = (process.env.AUTH_STRATEGY || supportedAuthStrategy[0]).toLowerCase();
 if (!supportedAuthStrategy.includes(authStrategyName)) {
-    throw new Error(`Auth-Strategy ${authStrategyName} not found.`)
+    throw new Error(`Auth-Strategy ${authStrategyName} not found in ${supportedAuthStrategy}.`)
 }
 
 const middleWareName = (process.env.CREG_MIDDLE_WARE || supportedMw[0]).toLowerCase();
 if (!supportedMw.includes(middleWareName)) {
-    throw new Error(`Middleware ${middleWareName} not found.`)
+    throw new Error(`Middleware ${middleWareName} not found in ${supportedMw}.`)
 }
 
 
@@ -51,15 +55,9 @@ const {
     createService,
     getLogs,
     deleteService,
-    cleanUp: myCleanUp,
+    cleanUp,
+    scheduleCleanUp,
 } = require(`./mw/${middleWareName}`);
-
-const cleanUp = async () => {
-    if (!IS_K8S) {
-        // only cleanUp if not in k8s
-        await myCleanUp();
-    }
-}
 
 
 app.route('/:version?/images/json').get(async (req, res) => {
@@ -117,7 +115,7 @@ app.all('*', (req, res) => {
         body
     } = req;
     if (url != '/favicon.ico') {
-        log.info('Untracked request: ', method, url, body);
+        log.warn('Untracked request: %s, %s, %j', method, url, body);
     }
     res.sendStatus(404)
 });
@@ -128,23 +126,40 @@ app.use((err, req, res) => {
         url,
         body
     } = req;
-    log.info('Request errored: ', method, url, body);
+    log.error('Request errored: %s, %s, %j', method, url, body);
     log.error(err);
     res.status(500).send(err.message);
 });
 
 (async () => {
 
-    log.info(`--------------- ServiceNow Docker Socket Proxy ---------------`)
+    log.info('--------------- ServiceNow Docker Socket Proxy ---------------')
     log.info(`     forwarding all requests to '${middleWareName}' middleware`)
     log.info(`     using auth strategy '${strategyName}'`)
     log.info('--------------------------------------------------------------');
+    
+    await scheduleCleanUp();
 
-    await cleanUp();
+    log.info('process.env.CONTAINER_CLEANUP_INTERVAL %s', process.env.CONTAINER_CLEANUP_INTERVAL)
+
+    const interval = (process.env.CONTAINER_CLEANUP_INTERVAL || '0 */5 * * * *').replace(/["']/g, '');
+    const job = schedule.scheduleJob(interval, async () => {
+        await scheduleCleanUp();
+    });
 
     lightship.registerShutdownHandler(async () => {
-        await cleanUp();
+
+        log.info('Application Shutdown detected.');
+
+        log.info('Shutdown Scheduled Cleanup Job');
+        await job.gracefulShutdown();
+
+        log.info('Cleanup Unused ATF Test Runners');
+        await Promise.all([scheduleCleanUp(), cleanUp()]);
+
+        log.info('Closing HTTP Application');
         app.close();
+
     });
 
     app.listen(PORT, () => {
