@@ -143,14 +143,15 @@ const cleanUp = async () => {
  *  - label.ATFRunner is set
  *  - label.CreatedOnDate exists and is older than process.env.CONTAINER_TIMEOUT_MINS
  */
-const scheduleCleanUp = async () => {
+const scheduleCleanUp = async (timeoutMinutes = 1441) => {
     
     log.info('Clean Up old Container Services')
 
     const request = await instance.get('/services');
     const list = request.data;
-    const timeOutMsSec = parseInt((process.env.CONTAINER_TIMEOUT_MINS || 1441), 10) * 60 * 1000;
 
+    const timeOutMsSec = timeoutMinutes * 60 * 1000;
+    const now = new Date().getTime();
     await Promise.all(list.filter((service) => {
         
         if(!service.Spec || !service.Spec.Labels || service.Spec.Labels.ATFRunner != 'true')
@@ -161,7 +162,6 @@ const scheduleCleanUp = async () => {
         if (!CreatedOnDate)
             return true;
 
-        const now = new Date().getTime();
         const created = parseInt(CreatedOnDate, 10);
         return (now > created + timeOutMsSec)
 

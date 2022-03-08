@@ -55,7 +55,7 @@ const deleteContainerGroup = async (containerGroupName) => {
 
     } catch (error) {
         if (error.response) {
-            return log.error(`deletion of containerGroup '${containerGroupName}' failed with:`, error.response.status, error.response.body);
+            return log.error(`deletion of containerGroup '${containerGroupName}' failed with: %s %s`, error.response.status, error.response.body);
         }
     }
 }
@@ -169,6 +169,7 @@ const createService = async (payload) => {
         log.info(`Create containerGroup ${containerGroupName}`);
         containerInstances[containerGroupName] = true;
         log.info('Container instances : %s', Object.keys(containerInstances))
+
         /*
          * create the container-group but dont wait for it to be started!
            Unfortunately ServiceNow can't wait that long.... */
@@ -189,7 +190,7 @@ const createService = async (payload) => {
 
         }).catch((error) => {
             if (error.response) {
-                return log.info(`creation of containerGroup '${containerGroupName}' failed with:`, error.response.status, error.response.body);
+                return log.info(`creation of containerGroup '${containerGroupName}' failed with: %s %s`, error.response.status, error.response.body);
             }
             log.error(error);
         });
@@ -299,14 +300,15 @@ const cleanUp = async () => {
  *  - name starts with the containerGroupPrefix
  *  - CreatedOnDate exists and is older than process.env.CONTAINER_TIMEOUT_MINS
  */
- const scheduleCleanUp = async () => {
+ const scheduleCleanUp = async (timeoutMinutes = 1441) => {
 
     log.info('Clean Up old Container Instances')
 
     const client = new ContainerInstanceManagementClient(credential, subscriptionId);
     const list = await client.containerGroups.list();
 
-    const timeOutMsSec = parseInt((process.env.CONTAINER_TIMEOUT_MINS || 1441), 10) * 60 * 1000;
+    const timeOutMsSec = timeoutMinutes * 60 * 1000;
+    const now = new Date().getTime();
     await Promise.all(list.filter((group) => {
 
         const isRunnerContainer = group.name.startsWith(containerGroupPrefix);
@@ -317,7 +319,6 @@ const cleanUp = async () => {
         if (!group.tags.CreatedOnDate)
             return true;
 
-        const now = new Date().getTime();
         const created = new Date(group.tags.CreatedOnDate).getTime();
         return (now > created + timeOutMsSec)
 

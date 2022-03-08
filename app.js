@@ -134,40 +134,42 @@ app.use((err, req, res) => {
 (async () => {
 
     log.info('--------------- ServiceNow Docker Socket Proxy ---------------')
-    log.info(`     forwarding all requests to '${middleWareName}' middleware`)
-    log.info(`     using auth strategy '${strategyName}'`)
+    log.info(`     Forwarding all requests to '${middleWareName}' middleware`)
+    log.info(`     Using auth strategy '${strategyName}'`)
     log.info('--------------------------------------------------------------');
     
-    await scheduleCleanUp();
+    const timeoutMinutes = parseInt((process.env.CONTAINER_TIMEOUT_MINS || 1441), 10)
 
-    log.info('process.env.CONTAINER_CLEANUP_INTERVAL %s', process.env.CONTAINER_CLEANUP_INTERVAL)
+    await scheduleCleanUp(timeoutMinutes);
+
+    log.info('Scheduled cleanup job at cron: \'%s\'', process.env.CONTAINER_CLEANUP_INTERVAL)
 
     const interval = (process.env.CONTAINER_CLEANUP_INTERVAL || '0 */5 * * * *').replace(/["']/g, '');
     const job = schedule.scheduleJob(interval, async () => {
-        await scheduleCleanUp();
+        await scheduleCleanUp(timeoutMinutes);
     });
 
     lightship.registerShutdownHandler(async () => {
 
-        log.info('Application Shutdown detected.');
+        log.info('Application shutdown detected.');
 
-        log.info('Shutdown Scheduled Cleanup Job');
+        log.info('Shutdown scheduled cleanup job');
         await job.gracefulShutdown();
 
-        log.info('Cleanup Unused ATF Test Runners');
-        await Promise.all([scheduleCleanUp(), cleanUp()]);
+        log.info('Cleanup unused atf test runners');
+        await Promise.all([scheduleCleanUp(timeoutMinutes), cleanUp()]);
 
-        log.info('Closing HTTP Application');
+        log.info('Closing HTTP application');
         app.close();
 
     });
 
     app.listen(PORT, () => {
         lightship.signalReady();
-        log.info(`server listening on port ${PORT}`);
+        log.info(`Server listening on port ${PORT}`);
 
         const address = lightship.server.address();
-        log.info(`lightship HTTP service is running on port ${address.port} -  /health, /live, /ready`);
+        log.info(`Lightship HTTP service is running on port ${address.port} -  /health, /live, /ready`);
 
     }).on('error', () => {
         lightship.shutdown();
