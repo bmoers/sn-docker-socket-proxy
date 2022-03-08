@@ -23,15 +23,24 @@ jobs:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Prep Tags
+        id: prep
+        run: |
+          VERSION=$(node -e "console.log(require('./package.json').version)")
+          TAGS="ghcr.io/bmoers/sn/sn-docker-socket-proxy:latest"
+          TAGS="$TAGS,ghcr.io/bmoers/sn/sn-docker-socket-proxy:sha-${GITHUB_SHA::8}"
+          TAGS="$TAGS,ghcr.io/bmoers/sn/sn-docker-socket-proxy:${VERSION}"
+          echo ::set-output name=tags::${TAGS}
           
       - name: Build Docker images & push to Github Packages
         uses: docker/build-push-action@v2
-        id: docker_build_nibe
+        id: docker_build
         with:
           pull: false
           push: true
-          tags: ghcr.io/bmoers/sn/sn-docker-socket-proxy:latest
+          tags: ${{ steps.prep.outputs.tags }}
           labels: |
             org.opencontainers.image.source=${{ github.event.repository.html_url }}
             org.opencontainers.image.revision=${{ github.sha }}
-
+            org.opencontainers.image.description=Docker Socket Proxy for ServiceNow ATF Headless Browser Integration with Azure
