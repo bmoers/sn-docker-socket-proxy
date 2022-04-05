@@ -1,6 +1,7 @@
 require('dotenv').config();
 
 const log = require('./lib/logger').topic(module);
+const parsePayload = require('./lib/parse-payload');
 
 const PORT = parseInt(process.env.PORT || 8080, 10);
 
@@ -49,6 +50,9 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(passport.initialize());
 app.use(passport.authenticate(strategyName, { session: false }));
 
+const settings = {
+    CONTAINER_CLEANUP_INTERVAL: parseInt((process.env.CONTAINER_TIMEOUT_MINS || 1440), 10)
+}
 
 const {
     getImage,
@@ -76,6 +80,16 @@ app.route('/:version?/images/json').get(async (req, res) => {
 
 app.route('/:version?/services/create').post(async (req, res) => {
     log.info(`:: createService: ${req.url}, body: ${JSON.stringify(req.body)}`);
+
+    const { env } = parsePayload(req.body);
+    if (env && env.TIMEOUT_MINS) {
+        const timeout = parseInt(env.TIMEOUT_MINS, 10);
+        if (timeout != settings.CONTAINER_CLEANUP_INTERVAL) {
+            log.info('Updating CONTAINER_CLEANUP_INTERVAL to: %d', timeout)
+            settings.CONTAINER_CLEANUP_INTERVAL = timeout
+        }
+    }
+
     const response = await createService(req.body);
     if (response.status > 299) {
         log.error('Request failed');
@@ -137,16 +151,14 @@ app.use((err, req, res) => {
     log.info(`     Forwarding all requests to '${middleWareName}' middleware`)
     log.info(`     Using auth strategy '${strategyName}'`)
     log.info('--------------------------------------------------------------');
-    
-    const timeoutMinutes = parseInt((process.env.CONTAINER_TIMEOUT_MINS || 1441), 10)
 
-    await scheduleCleanUp(timeoutMinutes);
+    await scheduleCleanUp(settings);
 
     log.info('Scheduled cleanup job at cron: \'%s\'', process.env.CONTAINER_CLEANUP_INTERVAL)
 
     const interval = (process.env.CONTAINER_CLEANUP_INTERVAL || '0 */5 * * * *').replace(/["']/g, '');
     const job = schedule.scheduleJob(interval, async () => {
-        await scheduleCleanUp(timeoutMinutes);
+        await scheduleCleanUp(settings);
     });
 
     lightship.registerShutdownHandler(async () => {
@@ -157,7 +169,7 @@ app.use((err, req, res) => {
         await job.gracefulShutdown();
 
         log.info('Cleanup unused atf test runners');
-        await Promise.all([scheduleCleanUp(timeoutMinutes), cleanUp()]);
+        await Promise.all([scheduleCleanUp(settings), cleanUp()]);
 
         log.info('Closing HTTP application');
         app.close();
