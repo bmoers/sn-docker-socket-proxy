@@ -1,4 +1,5 @@
 const log = require('../lib/logger').topic(module);
+const parsePayload = require('../lib/parse-payload');
 
 const {
     ClientSecretCredential
@@ -44,6 +45,11 @@ const credential = new ClientSecretCredential(process.env.CREG_AZURE_TENANT_ID, 
  * @returns 
  */
 const deleteContainerGroup = async (containerGroupName) => {
+
+    // cancel the deleteTimeout
+    clearTimeout(containerInstances[containerGroupName]);
+    delete containerInstances[containerGroupName];
+
     // delete the container-group
     const client = new ContainerInstanceManagementClient(credential, subscriptionId);
     try {
@@ -104,17 +110,8 @@ const createService = async (payload) => {
 
         const containerName = payload.Name;
         const containerGroupName = `${containerGroupPrefix}${containerName}`;
-
-        const spec = payload.TaskTemplate.ContainerSpec;
-        const image = spec.Image;
-        const osType = (image || '').toLowerCase().includes(':win') ? 'Windows' : 'Linux';
-        const env = spec.Env.reduce((out, tmp) => {
-            const arr = tmp.split('=');
-            const name = arr[0];
-            const value = arr.slice(1).join('=');
-            out[name] = value;
-            return out;
-        }, {});
+        
+        const {image, osType, env } = parsePayload(payload);
 
         const secretFileName = env.SECRET_PATH.split('/').pop();
         const secretMountPath = env.SECRET_PATH.substr(0, env.SECRET_PATH.length - secretFileName.length - 1);
@@ -254,11 +251,7 @@ const deleteService = async (containerName) => {
     }
 
     try {
-        const containerGroupName = `${containerGroupPrefix}${containerName}`;
-
-        // cancel the deleteTimeout
-        clearTimeout(containerInstances[containerGroupName]);
-
+        const containerGroupName = `${containerGroupPrefix}${containerName}`;        
         await deleteContainerGroup(containerGroupName);
 
         response.status = 200;
@@ -283,9 +276,8 @@ const cleanUp = async () => {
     const res = await Promise.all(Object.keys(containerInstances).map((containerGroupName => {
 
         log.info('Container instance to be stopped : %s', containerGroupName)
-
-        clearTimeout(containerInstances[containerGroupName])
         return deleteContainerGroup(containerGroupName);
+        
     })))
 
     if (!res.length)
@@ -300,14 +292,14 @@ const cleanUp = async () => {
  *  - name starts with the containerGroupPrefix
  *  - CreatedOnDate exists and is older than process.env.CONTAINER_TIMEOUT_MINS
  */
- const scheduleCleanUp = async (timeoutMinutes = 1441) => {
+const scheduleCleanUp = async ({ CONTAINER_CLEANUP_INTERVAL: timeoutMinutes = 1440 }) => {
 
-    log.info('Clean Up old Container Instances')
+    log.info('Clean Up old Container Instances older than %d', timeoutMinutes);
 
     const client = new ContainerInstanceManagementClient(credential, subscriptionId);
     const list = await client.containerGroups.list();
 
-    const timeOutMsSec = timeoutMinutes * 60 * 1000;
+    const timeOutMsSec = (timeoutMinutes + 2) * 60 * 1000;
     const now = new Date().getTime();
     await Promise.all(list.filter((group) => {
 

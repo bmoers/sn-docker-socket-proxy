@@ -143,14 +143,14 @@ const cleanUp = async () => {
  *  - label.ATFRunner is set
  *  - label.CreatedOnDate exists and is older than process.env.CONTAINER_TIMEOUT_MINS
  */
-const scheduleCleanUp = async (timeoutMinutes = 1441) => {
+const scheduleCleanUp = async ({CONTAINER_CLEANUP_INTERVAL: timeoutMinutes = 1440}) => {
     
-    log.info('Clean Up old Container Services')
+    log.info('Clean Up old Container Services older than %d', timeoutMinutes)
 
     const request = await instance.get('/services');
     const list = request.data;
 
-    const timeOutMsSec = timeoutMinutes * 60 * 1000;
+    const timeOutMsSec = (timeoutMinutes + 2) * 60 * 1000;
     const now = new Date().getTime();
     await Promise.all(list.filter((service) => {
         
