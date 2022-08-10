@@ -1,4 +1,4 @@
-FROM node:16
+FROM node:18
 
 
 ENV NODE_ENV production
@@ -11,7 +11,7 @@ RUN apt-get clean && \
     apt-get install -y curl ca-certificates vim && \
     rm -rf /var/lib/apt/lists/* && \ 
     update-ca-certificates && \
-    npm install -g --no-update-notifier --no-audit --no-fund npm@^8.1.0
+    npm install --location=global --no-update-notifier --no-audit --no-fund npm@^8.16.0
 
 WORKDIR /usr/src/app
 
