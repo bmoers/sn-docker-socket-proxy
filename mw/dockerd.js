@@ -14,6 +14,8 @@ const instance = axios.create({
 });
 
 // curl --unix-socket /var/run/docker.sock http://localhost/containers/json
+// curl --unix-socket /var/run/docker.sock http://localhost/services/json
+// curl -u username:password http://localhost:8080/images/json
 
 const containerInstances = {};
 
@@ -143,31 +145,42 @@ const cleanUp = async () => {
  *  - label.ATFRunner is set
  *  - label.CreatedOnDate exists and is older than process.env.CONTAINER_TIMEOUT_MINS
  */
-const scheduleCleanUp = async ({CONTAINER_CLEANUP_INTERVAL: timeoutMinutes = 1440}) => {
-    
+const scheduleCleanUp = async ({ CONTAINER_CLEANUP_INTERVAL: timeoutMinutes = 1440 }) => {
+
     log.info('Clean Up old Container Services older than %d', timeoutMinutes)
 
-    const request = await instance.get('/services');
-    const list = request.data;
+    try {
+        const request = await instance.get('/services');
+        const list = request.data;
 
-    const timeOutMsSec = (timeoutMinutes + 2) * 60 * 1000;
-    const now = new Date().getTime();
-    await Promise.all(list.filter((service) => {
-        
-        if(!service.Spec || !service.Spec.Labels || service.Spec.Labels.ATFRunner != 'true')
-            return false;
+        const timeOutMsSec = (timeoutMinutes + 2) * 60 * 1000;
+        const now = new Date().getTime();
+        await Promise.all(list.filter((service) => {
 
-        const CreatedOnDate = service.Spec.Labels.CreatedOnDate;
-        // if there is no date, delete it
-        if (!CreatedOnDate)
-            return true;
+            if (!service.Spec || !service.Spec.Labels || service.Spec.Labels.ATFRunner != 'true')
+                return false;
 
-        const created = parseInt(CreatedOnDate, 10);
-        return (now > created + timeOutMsSec)
+            const CreatedOnDate = service.Spec.Labels.CreatedOnDate;
+            // if there is no date, delete it
+            if (!CreatedOnDate)
+                return true;
 
-    }).map((service) => {
-        return deleteService(service.ID);
-    }));
+            const created = parseInt(CreatedOnDate, 10);
+            return (now > created + timeOutMsSec)
+
+        }).map((service) => {
+            return deleteService(service.ID);
+        }));
+
+    } catch (error) {
+        const { response } = error;
+        if (response) {
+            log.error('Clean Up old Container Services failed with: %d, %s', response.status, response.data?.message);
+        } else {
+            log.error('Clean Up old Container Services failed:', error);
+        }
+        throw error;
+    }
 }
 
 module.exports = {
