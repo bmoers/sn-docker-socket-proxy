@@ -1,4 +1,4 @@
-FROM node:18
+FROM node:19.0-buster-slim
 
 
 ENV NODE_ENV production

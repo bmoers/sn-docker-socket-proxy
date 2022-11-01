@@ -220,7 +220,7 @@ To run the proxy, copy the .env.example file to .env, update the following envir
 `docker-compose -f docker-compose.yml up`
 
 > NOTE:
-> Always run the container behind a reverse proxy, like Trafik, to terminate TLS. Otherwise the credentials are sent in plaintext over the network.
+> Always run the container behind a reverse proxy, like Traefik, to terminate TLS. Otherwise the credentials are sent in plaintext over the network.
 
 ```bash
 # ----------------------------------------------------------------
