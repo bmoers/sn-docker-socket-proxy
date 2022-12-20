@@ -1,4 +1,4 @@
-FROM node:19.1-buster-slim
+FROM node:18-buster-slim
 
 
 ENV NODE_ENV production
@@ -19,7 +19,7 @@ RUN chown -R node:node /usr/src/app && \
     chmod 755 /usr/src/app
 
 ADD --chown=node:node ./package*.json ./
-RUN npm ci --only=production --no-optional --no-audit --no-fund 
+RUN npm ci --omit=dev --omit=optional --no-audit --no-fund
 
 ADD ./mw ./mw
 ADD ./strategies ./strategies
