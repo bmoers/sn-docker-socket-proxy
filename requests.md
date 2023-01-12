@@ -41,6 +41,13 @@
         "Name": "dd5d46f0f18cc5507255bb19f00d353f",
         "TaskTemplate": {
             "ContainerSpec": {
+                "Mounts": [
+                    {
+                        "Type": "bind",
+                        "Source": "/opt/atf-docker-socket-proxy/screens",
+                        "Target": "/usr/src/app/screens"
+                    }
+                ],
                 "Image": "ghcr.io/servicenow/atf-headless-runner:lin-1.0.0",
                 "Env": [
                     "AGENT_ID=555d46f01b8cc5504aa7524b92f4933f",

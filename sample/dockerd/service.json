@@ -11,6 +11,13 @@
             "Labels": {},
             "TaskTemplate": {
                 "ContainerSpec": {
+                    "Mounts": [
+                        {
+                            "Type": "bind",
+                            "Source": "/opt/atf-docker-socket-proxy/screens",
+                            "Target": "/usr/src/app/screens"
+                        }
+                    ],
                     "Image": "ghcr.io/bmoers/sn/atf-headless-runner:1.0.2",
                     "Env": [
                         "AGENT_ID=5cb6662243468910f32cb2a36aec0f4e",
