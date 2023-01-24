@@ -8,6 +8,14 @@ const {
     ContainerInstanceManagementClient
 } = require('@azure/arm-containerinstance');
 
+async function toArray(asyncIterator) {
+    if(Array.isArray(asyncIterator))
+        return asyncIterator;
+        
+    const arr = [];
+    for await (const i of asyncIterator) arr.push(i);
+    return arr;
+}
 
 const mandatoryVars = ['CREG_AZURE_TENANT_ID', 'CREG_AZURE_CLIENT_ID', 'CREG_AZURE_CLIENT_SECRET', 'CREG_AZURE_RESOURCE_GROUP_NAME', 'CREG_AZURE_SUBSCRIPTION_ID', 'CREG_AZURE_RESOURCE_LOCATION', 'ATF_SN_PASSWORD']
 require('../lib/mandatory.js')(mandatoryVars);
@@ -170,7 +178,7 @@ const createService = async (payload) => {
         /*
          * create the container-group but dont wait for it to be started!
            Unfortunately ServiceNow can't wait that long.... */
-        client.containerGroups.createOrUpdate(resourceGroupName, containerGroupName, data).then((create) => {
+        client.containerGroups.beginCreateOrUpdateAndWait(resourceGroupName, containerGroupName, data).then((create) => {
 
             const timeOutSec = parseInt((env.TIMEOUT_MINS || 60), 10) * 60;
 
@@ -297,7 +305,7 @@ const scheduleCleanUp = async ({ CONTAINER_CLEANUP_INTERVAL: timeoutMinutes = 14
     log.info('Clean Up old Container Instances older than %d', timeoutMinutes);
 
     const client = new ContainerInstanceManagementClient(credential, subscriptionId);
-    const list = await client.containerGroups.list();
+    const list = await toArray(client.containerGroups.list());
 
     const timeOutMsSec = (timeoutMinutes + 2) * 60 * 1000;
     const now = new Date().getTime();
